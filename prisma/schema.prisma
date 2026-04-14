@@ -1,0 +1,67 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+}
+
+model Room {
+  id        Int        @id @default(autoincrement())
+  number    String     @unique
+  bookings  Booking[]
+  bedSensor BedSensor?
+}
+
+model Booking {
+  id              Int      @id @default(autoincrement())
+  roomNumber      String
+  customerName    String
+  customerCardUid String
+  managerCardUid  String
+  startTime       DateTime @default(now())
+  endTime         DateTime
+  isActive        Boolean  @default(true)
+  room            Room     @relation(fields: [roomNumber], references: [number])
+}
+
+model MasterCard {
+  id   Int    @id @default(autoincrement())
+  uid  String @unique
+  name String
+}
+
+model ScanLog {
+  id            Int      @id @default(autoincrement())
+  roomNumber    String
+  cardUid       String
+  cardType      String   // "CUSTOMER", "MANAGER", "MASTER", "UNKNOWN"
+  accessGranted Boolean
+  reason        String?
+  timestamp     DateTime @default(now())
+}
+
+model BedSensor {
+  id         Int      @id @default(autoincrement())
+  roomNumber String   @unique
+  weight     Float    @default(0)
+  isOccupied Boolean  @default(false)
+  lastUpdate DateTime @default(now())
+  room       Room     @relation(fields: [roomNumber], references: [number])
+}
+
+model BedLog {
+  id         Int      @id @default(autoincrement())
+  roomNumber String
+  weight     Float
+  isOccupied Boolean
+  timestamp  DateTime @default(now())
+}
