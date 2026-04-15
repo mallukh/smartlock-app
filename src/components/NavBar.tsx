@@ -17,12 +17,12 @@ export default function NavBar() {
   return (
     <nav className="nav">
       <Link href="/" className="nav-logo" style={{ textDecoration: 'none' }}>
-        SmartLock
+        SMART LODGE
       </Link>
       <div className="nav-links">
         <Link href="/" className="nav-link">Dashboard</Link>
         <Link href="/check-in" className="nav-link">Check In</Link>
-        <Link href="/history" className="nav-link">History</Link>
+        <Link href="/history" className="nav-link">Lock History</Link>
         <Link href="/bed-monitor" className="nav-link">Bed Monitor</Link>
         <Link href="/settings" className="nav-link">Settings</Link>
       </div>

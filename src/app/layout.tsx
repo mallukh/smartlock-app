@@ -4,7 +4,7 @@ import Providers from '@/components/Providers';
 import NavBar from '@/components/NavBar';
 
 export const metadata: Metadata = {
-  title: 'SmartLock Lodge Dashboard',
+  title: 'SMART LODGE',
   description: 'Manage RFID door locks and lodge bookings dynamically.',
 };
 
