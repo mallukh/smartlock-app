@@ -59,9 +59,9 @@ model BedSensor {
 }
 
 model BedLog {
-  id         Int      @id @default(autoincrement())
-  roomNumber String
-  weight     Float
-  isOccupied Boolean
-  timestamp  DateTime @default(now())
+  id          Int       @id @default(autoincrement())
+  roomNumber  String
+  occupiedAt  DateTime  @default(now())
+  vacatedAt   DateTime?
+  durationStr String?
 }

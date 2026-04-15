@@ -25,7 +25,7 @@ export default async function BedMonitorPage({
 
   const logs = await prisma.bedLog.findMany({
     where: logWhere,
-    orderBy: { timestamp: 'desc' },
+    orderBy: { occupiedAt: 'desc' },
     take: 200,
   });
 
@@ -190,7 +190,7 @@ export default async function BedMonitorPage({
                   borderBottom: '1px solid rgba(255,255,255,0.08)',
                 }}
               >
-                {['Timestamp', 'Room', 'Weight', 'Status'].map((h) => (
+                {['Serial No.', 'Room', 'Check-In (Occupied)', 'Check-Out (Vacated)', 'Duration'].map((h) => (
                   <th
                     key={h}
                     style={{
@@ -215,11 +215,12 @@ export default async function BedMonitorPage({
                     style={{
                       padding: '14px 20px',
                       fontSize: '0.9rem',
-                      color: 'var(--text-muted)',
+                      color: 'rgba(255,255,255,0.7)',
+                      fontWeight: '600',
                       whiteSpace: 'nowrap',
                     }}
                   >
-                    {new Date(log.timestamp).toLocaleString()}
+                    #{log.id}
                   </td>
                   <td
                     style={{ padding: '14px 20px', fontWeight: '600' }}
@@ -229,43 +230,35 @@ export default async function BedMonitorPage({
                   <td
                     style={{
                       padding: '14px 20px',
+                      fontSize: '0.9rem',
+                      color: 'var(--text-muted)',
+                    }}
+                  >
+                    {new Date(log.occupiedAt).toLocaleString()}
+                  </td>
+                  <td
+                    style={{
+                      padding: '14px 20px',
+                      fontSize: '0.9rem',
+                      color: 'var(--text-muted)',
+                    }}
+                  >
+                    {log.vacatedAt ? (
+                      new Date(log.vacatedAt).toLocaleString()
+                    ) : (
+                      <span style={{ color: '#f59e0b', fontWeight: '500' }}>Still Occupied...</span>
+                    )}
+                  </td>
+                  <td
+                    style={{
+                      padding: '14px 20px',
                       fontFamily: 'monospace',
                       fontSize: '0.9rem',
                       color: '#94a3b8',
+                      fontWeight: '600',
                     }}
                   >
-                    {log.weight.toFixed(1)} kg
-                  </td>
-                  <td style={{ padding: '14px 20px' }}>
-                    {log.isOccupied ? (
-                      <span
-                        style={{
-                          background: 'rgba(245,158,11,0.1)',
-                          color: '#f59e0b',
-                          border: '1px solid #f59e0b',
-                          padding: '4px 10px',
-                          borderRadius: '12px',
-                          fontSize: '0.82rem',
-                          fontWeight: '600',
-                        }}
-                      >
-                        ● Occupied
-                      </span>
-                    ) : (
-                      <span
-                        style={{
-                          background: 'rgba(16,185,129,0.1)',
-                          color: '#10b981',
-                          border: '1px solid #10b981',
-                          padding: '4px 10px',
-                          borderRadius: '12px',
-                          fontSize: '0.82rem',
-                          fontWeight: '600',
-                        }}
-                      >
-                        ○ Empty
-                      </span>
-                    )}
+                    {log.durationStr || 'Calculating...'}
                   </td>
                 </tr>
               ))}
