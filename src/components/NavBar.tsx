@@ -24,6 +24,7 @@ export default function NavBar() {
         <Link href="/check-in" className="nav-link">Check In</Link>
         <Link href="/history" className="nav-link">Lock History</Link>
         <Link href="/bed-monitor" className="nav-link">Bed Monitor</Link>
+        <Link href="/iot-led" className="nav-link">IoT Controller</Link>
         <Link href="/settings" className="nav-link">Settings</Link>
       </div>
       {session?.user && (

@@ -11,10 +11,13 @@ export function proxy(request: NextRequest) {
   // API routes for hardware (ESP32) stay open
   const isHardwareApi = pathname.startsWith('/api/hardware');
 
+  // IoT LED controller API stays open (ESP32 polls this)
+  const isIotApi = pathname.startsWith('/api/iot-led');
+
   // Auth API routes must stay open
   const isAuthApi = pathname.startsWith('/api/auth');
 
-  if (isPublicPath || isHardwareApi || isAuthApi) {
+  if (isPublicPath || isHardwareApi || isIotApi || isAuthApi) {
     return NextResponse.next();
   }
 
