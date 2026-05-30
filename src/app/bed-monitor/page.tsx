@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { AutoRefresh } from '@/components/AutoRefresh';
+import { formatLocalTime, formatLocalDateTime } from '@/lib/date';
 
 export const dynamic = 'force-dynamic';
 
@@ -110,7 +111,7 @@ export default async function BedMonitorPage({
                       : '○ Empty'}
                   </div>
                   <div className="bed-room-updated">
-                    {new Date(sensor.lastUpdate).toLocaleTimeString()}
+                    {formatLocalTime(sensor.lastUpdate)}
                   </div>
                 </div>
               ) : (
@@ -234,7 +235,7 @@ export default async function BedMonitorPage({
                       color: 'var(--text-muted)',
                     }}
                   >
-                    {new Date(log.occupiedAt).toLocaleString()}
+                    {formatLocalDateTime(log.occupiedAt)}
                   </td>
                   <td
                     style={{
@@ -244,7 +245,7 @@ export default async function BedMonitorPage({
                     }}
                   >
                     {log.vacatedAt ? (
-                      new Date(log.vacatedAt).toLocaleString()
+                      formatLocalDateTime(log.vacatedAt)
                     ) : (
                       <span style={{ color: '#f59e0b', fontWeight: '500' }}>Still Occupied...</span>
                     )}

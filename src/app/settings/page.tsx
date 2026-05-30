@@ -1,5 +1,6 @@
 import { addMasterCard, removeMasterCard, addRoom, deleteRoom, resetBedSensor } from './actions';
 import { prisma } from '@/lib/prisma';
+import { formatLocalDateTime } from '@/lib/date';
 
 export const dynamic = 'force-dynamic';
 
@@ -120,7 +121,7 @@ export default async function SettingsPage() {
                       )}
                     </span>
                     <span className="bed-sensor-detail">
-                      Weight: {sensor.weight.toFixed(1)} kg · Last update: {new Date(sensor.lastUpdate).toLocaleString()}
+                      Weight: {sensor.weight.toFixed(1)} kg · Last update: {formatLocalDateTime(sensor.lastUpdate)}
                     </span>
                   </div>
                   <form action={resetBedSensor}>

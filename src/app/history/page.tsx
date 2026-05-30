@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { AutoRefresh } from '@/components/AutoRefresh';
+import { formatLocalDateTime } from '@/lib/date';
 
 export const dynamic = 'force-dynamic';
 
@@ -93,7 +94,7 @@ export default async function HistoryPage({
                     className="log-row"
                   >
                     <td style={{ padding: '14px 20px', fontSize: '0.9rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                      {new Date(log.timestamp).toLocaleString()}
+                      {formatLocalDateTime(log.timestamp)}
                     </td>
                     <td style={{ padding: '14px 20px', fontWeight: '600' }}>Room {log.roomNumber}</td>
                     <td style={{ padding: '14px 20px', fontFamily: 'monospace', fontSize: '0.9rem', color: '#94a3b8' }}>{log.cardUid}</td>

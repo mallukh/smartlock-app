@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { AutoRefresh } from '@/components/AutoRefresh';
+import { formatLocalDateTime } from '@/lib/date';
 
 export const dynamic = 'force-dynamic';
 
@@ -127,7 +128,7 @@ export default async function Dashboard() {
                   </div>
                   <div className="info-row">
                     <span className="info-label">Expires</span>
-                    <span className="info-value">{new Date(booking.endTime).toLocaleString()}</span>
+                    <span className="info-value">{formatLocalDateTime(booking.endTime)}</span>
                   </div>
                   <div className="info-row">
                     <span className="info-label">Card UID</span>
