@@ -256,59 +256,74 @@ export default async function RoomOccupancyPage({
               </tr>
             </thead>
             <tbody>
-              {logs.map((log) => (
-                <tr key={log.id} className="log-row">
-                  <td
-                    style={{
-                      padding: '14px 20px',
-                      fontSize: '0.9rem',
-                      color: 'rgba(255,255,255,0.7)',
-                      fontWeight: '600',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    #{log.id}
-                  </td>
-                  <td
-                    style={{ padding: '14px 20px', fontWeight: '600' }}
-                  >
-                    Room {log.roomNumber}
-                  </td>
-                  <td
-                    style={{
-                      padding: '14px 20px',
-                      fontSize: '0.9rem',
-                      color: 'var(--text-muted)',
-                    }}
-                  >
-                    {formatLocalDateTime(log.occupiedAt)}
-                  </td>
-                  <td
-                    style={{
-                      padding: '14px 20px',
-                      fontSize: '0.9rem',
-                      color: 'var(--text-muted)',
-                    }}
-                  >
-                    {log.vacatedAt ? (
-                      formatLocalDateTime(log.vacatedAt)
-                    ) : (
-                      <span style={{ color: '#ef4444', fontWeight: '500' }}>Still Occupied...</span>
-                    )}
-                  </td>
-                  <td
-                    style={{
-                      padding: '14px 20px',
-                      fontFamily: 'monospace',
-                      fontSize: '0.9rem',
-                      color: '#94a3b8',
-                      fontWeight: '600',
-                    }}
-                  >
-                    {log.durationStr || 'Tracking...'}
-                  </td>
-                </tr>
-              ))}
+              {logs.map((log) => {
+                const sensor = sensorMap.get(log.roomNumber);
+                const isSensorOffline = sensor
+                  ? now.getTime() - new Date(sensor.lastUpdate).getTime() > 30000
+                  : true;
+
+                return (
+                  <tr key={log.id} className="log-row">
+                    <td
+                      style={{
+                        padding: '14px 20px',
+                        fontSize: '0.9rem',
+                        color: 'rgba(255,255,255,0.7)',
+                        fontWeight: '600',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      #{log.id}
+                    </td>
+                    <td
+                      style={{ padding: '14px 20px', fontWeight: '600' }}
+                    >
+                      Room {log.roomNumber}
+                    </td>
+                    <td
+                      style={{
+                        padding: '14px 20px',
+                        fontSize: '0.9rem',
+                        color: 'var(--text-muted)',
+                      }}
+                    >
+                      {formatLocalDateTime(log.occupiedAt)}
+                    </td>
+                    <td
+                      style={{
+                        padding: '14px 20px',
+                        fontSize: '0.9rem',
+                        color: 'var(--text-muted)',
+                      }}
+                    >
+                      {log.vacatedAt ? (
+                        formatLocalDateTime(log.vacatedAt)
+                      ) : isSensorOffline ? (
+                        <span style={{ color: '#94a3b8', fontWeight: '500' }}>Offline (Occupied)</span>
+                      ) : (
+                        <span style={{ color: '#ef4444', fontWeight: '500' }}>Still Occupied...</span>
+                      )}
+                    </td>
+                    <td
+                      style={{
+                        padding: '14px 20px',
+                        fontFamily: 'monospace',
+                        fontSize: '0.9rem',
+                        color: '#94a3b8',
+                        fontWeight: '600',
+                      }}
+                    >
+                      {log.vacatedAt ? (
+                        log.durationStr
+                      ) : isSensorOffline ? (
+                        <span style={{ color: '#94a3b8' }}>Sensor Offline</span>
+                      ) : (
+                        'Tracking...'
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
