@@ -904,3 +904,176 @@ a {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* ==================== ROOM OCCUPANCY ==================== */
+
+.room-status-section {
+  margin-top: 12px;
+  margin-bottom: 4px;
+}
+
+.room-status-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  position: relative;
+}
+
+.room-occupied {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.room-empty {
+  background: rgba(16, 185, 129, 0.06);
+  border: 1px solid rgba(16, 185, 129, 0.15);
+}
+
+.room-no-sensor {
+  background: rgba(148, 163, 184, 0.06);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.room-stale {
+  opacity: 0.5;
+}
+
+.room-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.room-status-text {
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--text-main);
+}
+
+.room-occupied .room-status-text {
+  color: #ef4444;
+}
+
+.room-empty .room-status-text {
+  color: #10b981;
+}
+
+.room-sensor-detail-text {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-family: 'Courier New', monospace;
+}
+
+.room-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  margin-left: auto;
+  flex-shrink: 0;
+  animation: roomPulse 1.5s ease-in-out infinite;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.6);
+}
+
+@keyframes roomPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.8); }
+}
+
+/* Room monitor grid/cards */
+.room-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.room-sensor-card {
+  background: var(--card-bg);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  padding: 20px;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s;
+  overflow: hidden;
+  position: relative;
+}
+
+.room-sensor-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
+}
+
+.room-sensor-occupied {
+  border-color: rgba(239, 68, 68, 0.3);
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.05), transparent);
+}
+
+.room-sensor-empty {
+  border-color: rgba(16, 185, 129, 0.2);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.03), transparent);
+}
+
+.room-sensor-nosensor {
+  opacity: 0.5;
+}
+
+.room-sensor-stale {
+  opacity: 0.45;
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.room-sensor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding-bottom: 8px;
+}
+
+.room-sensor-number {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.room-sensor-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sub-sensor-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+
+.sub-sensor-label {
+  color: var(--text-muted);
+}
+
+.sub-sensor-value {
+  font-weight: 600;
+}
+
+.sub-sensor-active {
+  color: #ef4444;
+}
+
+.sub-sensor-inactive {
+  color: var(--text-muted);
+}
+
+@media (max-width: 768px) {
+  .room-grid {
+    grid-template-columns: 1fr;
+  }
+}
+

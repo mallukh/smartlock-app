@@ -15,10 +15,11 @@ model User {
 }
 
 model Room {
-  id        Int        @id @default(autoincrement())
-  number    String     @unique
-  bookings  Booking[]
-  bedSensor BedSensor?
+  id         Int         @id @default(autoincrement())
+  number     String      @unique
+  bookings   Booking[]
+  bedSensor  BedSensor?
+  roomSensor RoomSensor?
 }
 
 model Booking {
@@ -65,3 +66,24 @@ model BedLog {
   vacatedAt   DateTime?
   durationStr String?
 }
+
+model RoomSensor {
+  id                 Int      @id @default(autoincrement())
+  roomNumber         String   @unique
+  isOccupied         Boolean  @default(false)
+  pirTriggered       Boolean  @default(false)
+  radarPresence      Boolean  @default(false)
+  movingDistance     Float    @default(0)
+  stationaryDistance Float    @default(0)
+  lastUpdate         DateTime @default(now())
+  room               Room     @relation(fields: [roomNumber], references: [number])
+}
+
+model RoomOccupancyLog {
+  id          Int       @id @default(autoincrement())
+  roomNumber  String
+  occupiedAt  DateTime  @default(now())
+  vacatedAt   DateTime?
+  durationStr String?
+}
+

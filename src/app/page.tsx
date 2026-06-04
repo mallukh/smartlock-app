@@ -6,7 +6,7 @@ import { formatLocalDateTime } from '@/lib/date';
 export const dynamic = 'force-dynamic';
 
 export default async function Dashboard() {
-  const [rooms, bedSensors] = await Promise.all([
+  const [rooms, bedSensors, roomSensors] = await Promise.all([
     prisma.room.findMany({
       include: {
         bookings: {
@@ -18,11 +18,15 @@ export default async function Dashboard() {
       orderBy: { number: 'asc' },
     }),
     prisma.bedSensor.findMany(),
+    prisma.roomSensor.findMany(),
   ]);
 
-  // Build lookup map for bed sensors by room number
+  // Build lookup maps for sensors by room number
   const bedSensorMap = new Map(
     bedSensors.map((s) => [s.roomNumber, s])
+  );
+  const roomSensorMap = new Map(
+    roomSensors.map((s) => [s.roomNumber, s])
   );
 
   const now = new Date();
@@ -31,14 +35,17 @@ export default async function Dashboard() {
   const totalBeds = bedSensors.length;
   const occupiedBeds = bedSensors.filter((s) => s.isOccupied).length;
 
+  // Stats for room occupancy
+  const occupiedRooms = roomSensors.filter((s) => s.isOccupied).length;
+
   return (
     <div>
       <AutoRefresh intervalMs={5000} />
       <h1 className="page-title">Lodge Dashboard</h1>
-      <p className="page-subtitle">Real-time status of all smart lock rooms &amp; bed occupancy</p>
+      <p className="page-subtitle">Real-time status of all smart lock rooms, beds &amp; room occupancy</p>
 
       {/* Quick Stats */}
-      <div className="dash-stats-row">
+      <div className="dash-stats-row" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
         <div className="dash-stat-card">
           <div className="dash-stat-value" style={{ color: '#6366f1' }}>{rooms.length}</div>
           <div className="dash-stat-label">Total Rooms</div>
@@ -52,6 +59,10 @@ export default async function Dashboard() {
           <div className="dash-stat-label">Beds Occupied</div>
         </div>
         <div className="dash-stat-card">
+          <div className="dash-stat-value" style={{ color: '#ef4444' }}>{occupiedRooms}</div>
+          <div className="dash-stat-label">Rooms Occupied</div>
+        </div>
+        <div className="dash-stat-card">
           <div className="dash-stat-value" style={{ color: '#94a3b8' }}>{totalBeds - occupiedBeds}</div>
           <div className="dash-stat-label">Beds Empty</div>
         </div>
@@ -61,6 +72,7 @@ export default async function Dashboard() {
         {rooms.map((room) => {
           const booking = room.bookings[0];
           const bedSensor = bedSensorMap.get(room.number);
+          const roomSensor = roomSensorMap.get(room.number);
           
           // Compute lock status
           let isOccupied = false;
@@ -77,9 +89,13 @@ export default async function Dashboard() {
             }
           }
 
-          // Bed sensor freshness check (stale if > 30 seconds old)
+          // Sensor freshness checks (stale if > 30 seconds old)
           const isSensorStale = bedSensor
             ? (now.getTime() - new Date(bedSensor.lastUpdate).getTime()) > 30000
+            : false;
+
+          const isRoomSensorStale = roomSensor
+            ? (now.getTime() - new Date(roomSensor.lastUpdate).getTime()) > 30000
             : false;
 
           return (
@@ -98,7 +114,7 @@ export default async function Dashboard() {
               <div className="bed-status-section">
                 {bedSensor ? (
                   <div className={`bed-status-badge ${bedSensor.isOccupied ? 'bed-occupied' : 'bed-empty'} ${isSensorStale ? 'bed-stale' : ''}`}>
-                    <span className="bed-icon">{bedSensor.isOccupied ? '🛏️' : '🛏️'}</span>
+                    <span className="bed-icon">🛏️</span>
                     <div className="bed-status-info">
                       <span className="bed-status-text">
                         {bedSensor.isOccupied ? 'Bed Occupied' : 'Bed Empty'}
@@ -114,8 +130,44 @@ export default async function Dashboard() {
                   </div>
                 ) : (
                   <div className="bed-status-badge bed-no-sensor">
-                    <span className="bed-icon">📡</span>
+                    <span className="bed-icon">🛏️</span>
                     <span className="bed-status-text" style={{ color: 'var(--text-muted)' }}>No Bed Sensor</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Room Occupancy Section */}
+              <div className="room-status-section">
+                {roomSensor ? (
+                  <div className={`room-status-badge ${roomSensor.isOccupied ? 'room-occupied' : 'room-empty'} ${isRoomSensorStale ? 'room-stale' : ''}`}>
+                    <span className="room-icon">{roomSensor.isOccupied ? '👥' : '👤'}</span>
+                    <div className="bed-status-info">
+                      <span className="room-status-text" style={roomSensor.isOccupied ? { color: '#ef4444' } : {}}>
+                        {roomSensor.isOccupied ? 'Room Occupied' : 'Room Vacant'}
+                      </span>
+                      <span className="bed-weight-text">
+                        {isRoomSensorStale ? (
+                          'Offline'
+                        ) : roomSensor.isOccupied ? (
+                          roomSensor.radarPresence ? (
+                            `Radar: ${roomSensor.movingDistance > 0 ? 'Moving' : 'Breathing'}`
+                          ) : (
+                            'PIR: Active'
+                          )
+                        ) : (
+                          'No Presence'
+                        )}
+                        {isRoomSensorStale && ' • Offline'}
+                      </span>
+                    </div>
+                    {!isRoomSensorStale && roomSensor.isOccupied && (
+                      <span className="room-live-dot" style={{ background: '#ef4444', boxShadow: '0 0 6px rgba(239, 68, 68, 0.6)' }} />
+                    )}
+                  </div>
+                ) : (
+                  <div className="room-status-badge room-no-sensor">
+                    <span className="room-icon">👤</span>
+                    <span className="room-status-text" style={{ color: 'var(--text-muted)' }}>No Room Sensor</span>
                   </div>
                 )}
               </div>
