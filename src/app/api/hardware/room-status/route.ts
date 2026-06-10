@@ -23,8 +23,8 @@ export async function POST(req: Request) {
     const occupied = !!isOccupied;
     const pir = !!pirTriggered;
     const radar = !!radarPresence;
-    const movingDist = parseFloat(movingDistance) || 0;
-    const stationaryDist = parseFloat(stationaryDistance) || 0;
+    const movingDist = (parseFloat(movingDistance) || 0) / 100.0; // convert cm to meters
+    const stationaryDist = (parseFloat(stationaryDistance) || 0) / 100.0; // convert cm to meters
 
     // Ensure the room exists first to prevent foreign key errors
     await prisma.room.upsert({
