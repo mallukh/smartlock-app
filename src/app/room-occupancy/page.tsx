@@ -124,7 +124,7 @@ export default async function RoomOccupancyPage({
                     <div className="sub-sensor-status">
                       <span className="sub-sensor-label">Moving Distance</span>
                       <span className="sub-sensor-value" style={{ color: '#ef4444' }}>
-                        {sensor.movingDistance.toFixed(1)} cm
+                        {sensor.movingDistance.toFixed(2)} m
                       </span>
                     </div>
                   )}
@@ -134,7 +134,7 @@ export default async function RoomOccupancyPage({
                     <div className="sub-sensor-status">
                       <span className="sub-sensor-label">Breathing/Still Dist</span>
                       <span className="sub-sensor-value" style={{ color: '#38bdf8' }}>
-                        {sensor.stationaryDistance.toFixed(1)} cm
+                        {sensor.stationaryDistance.toFixed(2)} m
                       </span>
                     </div>
                   )}
