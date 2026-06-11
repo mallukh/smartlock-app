@@ -58,15 +58,23 @@ export async function POST(req: Request) {
       if (openLog) {
         const vacatedAt = new Date();
         const durationMs = vacatedAt.getTime() - openLog.occupiedAt.getTime();
-        const mins = Math.floor(durationMs / 60000);
-        const hrs = Math.floor(mins / 60);
-        const remMins = mins % 60;
-        const durationStr = `${hrs}h ${remMins}m`;
 
-        await prisma.roomOccupancyLog.update({
-          where: { id: openLog.id },
-          data: { vacatedAt, durationStr },
-        });
+        if (durationMs < 5 * 60 * 1000) {
+          // If occupancy is less than 5 minutes, discard the log entry
+          await prisma.roomOccupancyLog.delete({
+            where: { id: openLog.id },
+          });
+        } else {
+          const mins = Math.floor(durationMs / 60000);
+          const hrs = Math.floor(mins / 60);
+          const remMins = mins % 60;
+          const durationStr = `${hrs}h ${remMins}m`;
+
+          await prisma.roomOccupancyLog.update({
+            where: { id: openLog.id },
+            data: { vacatedAt, durationStr },
+          });
+        }
       }
     }
 
