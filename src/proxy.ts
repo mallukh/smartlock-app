@@ -5,8 +5,15 @@ export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Public routes that don't require auth
-  const publicPaths = ['/login', '/signup', '/forgot-password'];
-  const isPublicPath = publicPaths.some((p) => pathname.startsWith(p));
+  const publicPaths = ['/login', '/signup', '/forgot-password', '/about', '/contact', '/register'];
+  const isExactRoot = pathname === '/';
+  const isSitemapOrRobots = pathname === '/sitemap.xml' || pathname === '/robots.txt';
+  const isGoogleVerification = pathname.startsWith('/google') && pathname.endsWith('.html');
+  const isPublicPath =
+    isExactRoot ||
+    isSitemapOrRobots ||
+    isGoogleVerification ||
+    publicPaths.some((p) => pathname === p || pathname.startsWith(p + '/'));
 
   // API routes for hardware (ESP32) stay open
   const isHardwareApi = pathname.startsWith('/api/hardware');
