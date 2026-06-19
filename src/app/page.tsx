@@ -2,6 +2,12 @@ import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { AutoRefresh } from '@/components/AutoRefresh';
 import { formatLocalDateTime } from '@/lib/date';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Dashboard - Smart Lodge Management System',
+  description: 'Overview of guest check-ins, RFID door scan logs, active bed weight monitoring, and room occupancy.',
+};
 
 export const dynamic = 'force-dynamic';
 

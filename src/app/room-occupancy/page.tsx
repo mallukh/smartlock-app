@@ -2,6 +2,12 @@ import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { AutoRefresh } from '@/components/AutoRefresh';
 import { formatLocalTime, formatLocalDateTime } from '@/lib/date';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Room Occupancy Monitor - Smart Lodge',
+  description: 'Real-time room occupancy tracking using SR602 PIR motion sensors and LD2410B mmWave breathing sensors.',
+};
 
 export const dynamic = 'force-dynamic';
 

@@ -1,6 +1,12 @@
 import { addMasterCard, removeMasterCard, addRoom, deleteRoom, resetBedSensor } from './actions';
 import { prisma } from '@/lib/prisma';
 import { formatLocalDateTime } from '@/lib/date';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'System Settings & Devices - Smart Lodge',
+  description: 'Manage smart lodge rooms, master RFID access keycards, active bed weight sensors, and device calibrations.',
+};
 
 export const dynamic = 'force-dynamic';
 

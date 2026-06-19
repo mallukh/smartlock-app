@@ -2,6 +2,12 @@ import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { AutoRefresh } from '@/components/AutoRefresh';
 import { formatLocalDateTime } from '@/lib/date';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Door Lock Scan History - Smart Lodge',
+  description: 'Track and filter real-time RFID lock access logs, check-ins, and door access attempts.',
+};
 
 export const dynamic = 'force-dynamic';
 

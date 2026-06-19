@@ -2,6 +2,12 @@ import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { AutoRefresh } from '@/components/AutoRefresh';
 import { formatLocalTime, formatLocalDateTime } from '@/lib/date';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Bed Monitor & Weight Tracker - Smart Lodge',
+  description: 'Real-time bed weight load cell tracking and bed occupancy logging for guest room analytics.',
+};
 
 export const dynamic = 'force-dynamic';
 

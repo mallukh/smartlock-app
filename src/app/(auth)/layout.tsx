@@ -1,3 +1,10 @@
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Authentication - Smart Lodge',
+  description: 'Log in or register your account to manage the Smart Lodge access control system.',
+};
+
 export default function AuthLayout({
   children,
 }: {

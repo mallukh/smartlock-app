@@ -1,5 +1,11 @@
 import { checkIn } from './actions';
 import { prisma } from '@/lib/prisma';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Guest Check-In - Smart Lodge',
+  description: 'Dynamically assign RFID room keys, set rental duration, and register customer card permissions.',
+};
 
 export const dynamic = 'force-dynamic';
 
