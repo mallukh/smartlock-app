@@ -4,10 +4,44 @@ import { prisma } from '@/lib/prisma';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { roomNumber, cardUid } = body;
+    const { roomNumber, cardUid, apiKey } = body;
+
+    // Check for API Key in headers or body
+    const key = req.headers.get('x-api-key') || apiKey;
+    if (!key) {
+      return NextResponse.json({ authorized: false, reason: 'missing API key' }, { status: 401 });
+    }
 
     if (!roomNumber || !cardUid) {
       return NextResponse.json({ authorized: false, reason: 'missing parameters' }, { status: 400 });
+    }
+
+    // 1. Authenticate Lodge
+    const lodge = await prisma.lodge.findFirst({
+      where: {
+        OR: [
+          { apiKey: String(key) },
+          { code: String(key) } // Fallback to code
+        ]
+      }
+    });
+
+    if (!lodge) {
+      return NextResponse.json({ authorized: false, reason: 'invalid API key' }, { status: 401 });
+    }
+
+    // 2. Find Room in this Lodge
+    const room = await prisma.room.findUnique({
+      where: {
+        number_lodgeId: {
+          number: String(roomNumber),
+          lodgeId: lodge.id,
+        }
+      }
+    });
+
+    if (!room) {
+      return NextResponse.json({ authorized: false, reason: 'room does not exist' }, { status: 404 });
     }
 
     const uid = cardUid.toUpperCase();
@@ -20,11 +54,12 @@ export async function POST(req: Request) {
     ) => {
       await prisma.scanLog.create({
         data: {
-          roomNumber,
+          roomNumber: String(roomNumber),
           cardUid: uid,
           cardType,
           accessGranted,
           reason: reason ?? null,
+          lodgeId: lodge.id,
         },
       });
       if (accessGranted) {
@@ -33,15 +68,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ authorized: false, reason: reason ?? 'denied' });
     };
 
-    // 1. Check Master Card
-    const masterCard = await prisma.masterCard.findUnique({ where: { uid } });
+    // 3. Check Master Card for this Lodge
+    const masterCard = await prisma.masterCard.findUnique({
+      where: {
+        uid_lodgeId: {
+          uid,
+          lodgeId: lodge.id,
+        }
+      }
+    });
     if (masterCard) {
       return await logAndRespond('MASTER', true);
     }
 
-    // 2. Find active booking for this room
+    // 4. Find active booking for this specific Room
     const activeBooking = await prisma.booking.findFirst({
-      where: { roomNumber, isActive: true },
+      where: { roomId: room.id, isActive: true },
       orderBy: { startTime: 'desc' },
     });
 
@@ -49,7 +91,7 @@ export async function POST(req: Request) {
       return await logAndRespond('UNKNOWN', false, 'no active booking');
     }
 
-    // 3. Identify card type
+    // 5. Identify card type
     const isCustomerCard = uid === activeBooking.customerCardUid.toUpperCase();
     const isManagerCard  = uid === activeBooking.managerCardUid.toUpperCase();
 
@@ -59,7 +101,7 @@ export async function POST(req: Request) {
 
     const cardType = isManagerCard ? 'MANAGER' : 'CUSTOMER';
 
-    // 4. Check expiration
+    // 6. Check expiration
     const now = new Date();
     if (now > activeBooking.endTime) {
       await prisma.booking.update({ where: { id: activeBooking.id }, data: { isActive: false } });

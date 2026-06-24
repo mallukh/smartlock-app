@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { AutoRefresh } from '@/components/AutoRefresh';
 import { formatLocalDateTime } from '@/lib/date';
 import type { Metadata } from 'next';
+import { auth } from '@/lib/auth';
+import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
   title: 'Dashboard - Smart Lodge Management System',
@@ -12,8 +14,33 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic';
 
 export default async function Dashboard() {
+  const session = await auth();
+  if (!session || !session.user) {
+    redirect('/login');
+  }
+
+  if (session.user.role === 'SUPER_ADMIN') {
+    redirect('/super-admin');
+  }
+
+  const lodgeId = session.user.lodgeId;
+  if (lodgeId === null || lodgeId === undefined) {
+    return (
+      <div className="public-container">
+        <h1 className="page-title">Access Denied</h1>
+        <p className="public-p">Your account is not associated with any Lodge. Please contact system support.</p>
+      </div>
+    );
+  }
+
+  // Fetch Lodge details
+  const lodge = await prisma.lodge.findUnique({
+    where: { id: lodgeId }
+  });
+
   const [rooms, bedSensors, roomSensors] = await Promise.all([
     prisma.room.findMany({
+      where: { lodgeId },
       include: {
         bookings: {
           where: { isActive: true },
@@ -23,16 +50,20 @@ export default async function Dashboard() {
       },
       orderBy: { number: 'asc' },
     }),
-    prisma.bedSensor.findMany(),
-    prisma.roomSensor.findMany(),
+    prisma.bedSensor.findMany({
+      where: { room: { lodgeId } }
+    }),
+    prisma.roomSensor.findMany({
+      where: { room: { lodgeId } }
+    }),
   ]);
 
-  // Build lookup maps for sensors by room number
+  // Build lookup maps for sensors by roomId
   const bedSensorMap = new Map(
-    bedSensors.map((s) => [s.roomNumber, s])
+    bedSensors.map((s) => [s.roomId, s])
   );
   const roomSensorMap = new Map(
-    roomSensors.map((s) => [s.roomNumber, s])
+    roomSensors.map((s) => [s.roomId, s])
   );
 
   const now = new Date();
@@ -47,7 +78,7 @@ export default async function Dashboard() {
   return (
     <div>
       <AutoRefresh intervalMs={5000} />
-      <h1 className="page-title">Lodge Dashboard</h1>
+      <h1 className="page-title">{lodge?.name || 'Lodge'} Dashboard</h1>
       <p className="page-subtitle">Real-time status of all smart lock rooms, beds &amp; room occupancy</p>
 
       {/* Quick Stats */}
@@ -69,7 +100,7 @@ export default async function Dashboard() {
           <div className="dash-stat-label">Rooms Occupied</div>
         </div>
         <div className="dash-stat-card">
-          <div className="dash-stat-value" style={{ color: '#94a3b8' }}>{totalBeds - occupiedBeds}</div>
+          <div className="dash-stat-value" style={{ color: '#94a3b8' }}>{(bedSensors.length) - occupiedBeds}</div>
           <div className="dash-stat-label">Beds Empty</div>
         </div>
       </div>
@@ -77,8 +108,8 @@ export default async function Dashboard() {
       <div className="rooms-grid">
         {rooms.map((room) => {
           const booking = room.bookings[0];
-          const bedSensor = bedSensorMap.get(room.number);
-          const roomSensor = roomSensorMap.get(room.number);
+          const bedSensor = bedSensorMap.get(room.id);
+          const roomSensor = roomSensorMap.get(room.id);
           
           // Compute lock status
           let isOccupied = false;

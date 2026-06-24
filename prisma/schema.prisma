@@ -11,33 +11,56 @@ model User {
   name      String
   email     String   @unique
   password  String
+  role      String   @default("LODGE_ADMIN") // "SUPER_ADMIN" | "LODGE_ADMIN"
+  lodgeId   Int?
+  lodge     Lodge?   @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
+}
+
+model Lodge {
+  id          Int          @id @default(autoincrement())
+  name        String
+  code        String       @unique // slug representation, e.g. "grand-inn"
+  apiKey      String       @unique // secret uuid for ESP32 authentication
+  users       User[]
+  rooms       Room[]
+  masterCards MasterCard[]
+  scanLogs    ScanLog[]
+  createdAt   DateTime     @default(now())
 }
 
 model Room {
   id         Int         @id @default(autoincrement())
-  number     String      @unique
+  number     String
+  lodgeId    Int
+  lodge      Lodge       @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
   bookings   Booking[]
   bedSensor  BedSensor?
   roomSensor RoomSensor?
+
+  @@unique([number, lodgeId])
 }
 
 model Booking {
   id              Int      @id @default(autoincrement())
-  roomNumber      String
+  roomId          Int
   customerName    String
   customerCardUid String
   managerCardUid  String
   startTime       DateTime @default(now())
   endTime         DateTime
   isActive        Boolean  @default(true)
-  room            Room     @relation(fields: [roomNumber], references: [number])
+  room            Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
 }
 
 model MasterCard {
-  id   Int    @id @default(autoincrement())
-  uid  String @unique
-  name String
+  id      Int    @id @default(autoincrement())
+  uid     String
+  name    String
+  lodgeId Int
+  lodge   Lodge  @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
+
+  @@unique([uid, lodgeId])
 }
 
 model ScanLog {
@@ -47,21 +70,23 @@ model ScanLog {
   cardType      String   // "CUSTOMER", "MANAGER", "MASTER", "UNKNOWN"
   accessGranted Boolean
   reason        String?
+  lodgeId       Int
+  lodge         Lodge    @relation(fields: [lodgeId], references: [id], onDelete: Cascade)
   timestamp     DateTime @default(now())
 }
 
 model BedSensor {
   id         Int      @id @default(autoincrement())
-  roomNumber String   @unique
+  roomId     Int      @unique
   weight     Float    @default(0)
   isOccupied Boolean  @default(false)
   lastUpdate DateTime @default(now())
-  room       Room     @relation(fields: [roomNumber], references: [number])
+  room       Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
 }
 
 model BedLog {
   id          Int       @id @default(autoincrement())
-  roomNumber  String
+  roomId      Int
   occupiedAt  DateTime  @default(now())
   vacatedAt   DateTime?
   durationStr String?
@@ -69,19 +94,19 @@ model BedLog {
 
 model RoomSensor {
   id                 Int      @id @default(autoincrement())
-  roomNumber         String   @unique
+  roomId             Int      @unique
   isOccupied         Boolean  @default(false)
   pirTriggered       Boolean  @default(false)
   radarPresence      Boolean  @default(false)
   movingDistance     Float    @default(0)
   stationaryDistance Float    @default(0)
   lastUpdate         DateTime @default(now())
-  room               Room     @relation(fields: [roomNumber], references: [number])
+  room               Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
 }
 
 model RoomOccupancyLog {
   id          Int       @id @default(autoincrement())
-  roomNumber  String
+  roomId      Int
   occupiedAt  DateTime  @default(now())
   vacatedAt   DateTime?
   durationStr String?

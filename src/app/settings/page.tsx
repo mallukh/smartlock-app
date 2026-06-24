@@ -2,6 +2,8 @@ import { addMasterCard, removeMasterCard, addRoom, deleteRoom, resetBedSensor } 
 import { prisma } from '@/lib/prisma';
 import { formatLocalDateTime } from '@/lib/date';
 import type { Metadata } from 'next';
+import { auth } from '@/lib/auth';
+import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
   title: 'System Settings & Devices - Smart Lodge',
@@ -11,10 +13,34 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic';
 
 export default async function SettingsPage() {
-  const [masterCards, rooms, bedSensors] = await Promise.all([
-    prisma.masterCard.findMany(),
-    prisma.room.findMany({ orderBy: { number: 'asc' } }),
-    prisma.bedSensor.findMany({ orderBy: { roomNumber: 'asc' } }),
+  const session = await auth();
+  if (!session || !session.user) {
+    redirect('/login');
+  }
+
+  const lodgeId = session.user.lodgeId;
+  if (lodgeId === null || lodgeId === undefined) {
+    return (
+      <div className="public-container">
+        <h1 className="page-title">Access Denied</h1>
+        <p className="public-p">Your account is not associated with any Lodge. Please contact system support.</p>
+      </div>
+    );
+  }
+
+  // Fetch Lodge, MasterCards, Rooms, and BedSensors
+  const [lodge, masterCards, rooms, bedSensors] = await Promise.all([
+    prisma.lodge.findUnique({ where: { id: lodgeId } }),
+    prisma.masterCard.findMany({ where: { lodgeId } }),
+    prisma.room.findMany({
+      where: { lodgeId },
+      orderBy: { number: 'asc' }
+    }),
+    prisma.bedSensor.findMany({
+      where: { room: { lodgeId } },
+      include: { room: true },
+      orderBy: { room: { number: 'asc' } }
+    }),
   ]);
 
   const now = new Date();
@@ -22,7 +48,26 @@ export default async function SettingsPage() {
   return (
     <>
       <h1 className="page-title">Settings</h1>
-      <p className="page-subtitle">Manage rooms, master keys, bed sensors, and access control</p>
+      <p className="page-subtitle">Manage rooms, master keys, bed sensors, and access control for {lodge?.name}</p>
+
+      {/* ── Hardware Integration Credentials ── */}
+      <h2 style={{ fontSize: '1.2rem', color: 'var(--text-muted)', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Hardware Integration</h2>
+      <div className="glass-card" style={{ marginBottom: '40px' }}>
+        <h3 style={{ fontSize: '1.15rem', marginTop: 0 }}>Device Credentials</h3>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '20px' }}>
+          Configure your ESP32 client microcontrollers with the following properties in their request headers (<code style={{ color: '#818cf8' }}>x-api-key</code>) or payloads:
+        </p>
+        <div className="grid-2">
+          <div style={{ padding: '16px', background: 'rgba(0,0,0,0.2)', borderRadius: '12px', border: '1px solid var(--card-border)' }}>
+            <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Lodge Code</div>
+            <div style={{ fontSize: '1.2rem', fontWeight: 'bold', fontFamily: 'monospace' }}>{lodge?.code}</div>
+          </div>
+          <div style={{ padding: '16px', background: 'rgba(0,0,0,0.2)', borderRadius: '12px', border: '1px solid var(--card-border)' }}>
+            <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Lodge API Key</div>
+            <div style={{ fontSize: '1.2rem', fontWeight: 'bold', fontFamily: 'monospace', color: '#a5b4fc' }}>{lodge?.apiKey}</div>
+          </div>
+        </div>
+      </div>
 
       {/* ── Room Management ── */}
       <h2 style={{ fontSize: '1.2rem', color: 'var(--text-muted)', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Room Management</h2>
@@ -116,7 +161,7 @@ export default async function SettingsPage() {
                 <div key={sensor.id} className="bed-sensor-row">
                   <div className="bed-sensor-info">
                     <span className="bed-sensor-room">
-                      Room {sensor.roomNumber}
+                      Room {sensor.room.number}
                       {sensor.isOccupied ? (
                         <span style={{ color: '#f59e0b', fontSize: '0.85rem', marginLeft: '8px' }}>● Occupied</span>
                       ) : (

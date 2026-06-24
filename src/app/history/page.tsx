@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { AutoRefresh } from '@/components/AutoRefresh';
 import { formatLocalDateTime } from '@/lib/date';
 import type { Metadata } from 'next';
+import { auth } from '@/lib/auth';
+import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
   title: 'Door Lock Scan History - Smart Lodge',
@@ -23,10 +25,28 @@ export default async function HistoryPage({
 }: {
   searchParams: Promise<{ room?: string; result?: string }>;
 }) {
-  const params = await searchParams;
-  const rooms = await prisma.room.findMany({ orderBy: { number: 'asc' } });
+  const session = await auth();
+  if (!session || !session.user) {
+    redirect('/login');
+  }
 
-  const where: Record<string, unknown> = {};
+  const lodgeId = session.user.lodgeId;
+  if (lodgeId === null || lodgeId === undefined) {
+    return (
+      <div className="public-container">
+        <h1 className="page-title">Access Denied</h1>
+        <p className="public-p">Your account is not associated with any Lodge. Please contact system support.</p>
+      </div>
+    );
+  }
+
+  const params = await searchParams;
+  const rooms = await prisma.room.findMany({
+    where: { lodgeId },
+    orderBy: { number: 'asc' }
+  });
+
+  const where: Record<string, any> = { lodgeId };
   if (params.room) where.roomNumber = params.room;
   if (params.result === 'granted')  where.accessGranted = true;
   if (params.result === 'denied')   where.accessGranted = false;

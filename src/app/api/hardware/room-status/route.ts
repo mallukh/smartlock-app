@@ -11,7 +11,27 @@ export async function POST(req: Request) {
       radarPresence,
       movingDistance,
       stationaryDistance,
+      apiKey
     } = body;
+
+    // 1. Authenticate Lodge via API Key
+    const key = req.headers.get('x-api-key') || apiKey;
+    if (!key) {
+      return NextResponse.json({ success: false, error: 'missing API key' }, { status: 401 });
+    }
+
+    const lodge = await prisma.lodge.findFirst({
+      where: {
+        OR: [
+          { apiKey: String(key) },
+          { code: String(key) }
+        ]
+      }
+    });
+
+    if (!lodge) {
+      return NextResponse.json({ success: false, error: 'invalid API key' }, { status: 401 });
+    }
 
     if (!roomNumber) {
       return NextResponse.json(
@@ -26,32 +46,40 @@ export async function POST(req: Request) {
     const movingDist = (parseFloat(movingDistance) || 0) / 100.0; // convert cm to meters
     const stationaryDist = (parseFloat(stationaryDistance) || 0) / 100.0; // convert cm to meters
 
-    // Ensure the room exists first to prevent foreign key errors
-    await prisma.room.upsert({
-      where: { number: String(roomNumber) },
+    // 2. Ensure room exists for this lodge
+    const room = await prisma.room.upsert({
+      where: {
+        number_lodgeId: {
+          number: String(roomNumber),
+          lodgeId: lodge.id
+        }
+      },
       update: {},
-      create: { number: String(roomNumber) },
+      create: {
+        number: String(roomNumber),
+        lodgeId: lodge.id
+      },
     });
 
-    // Fetch previous room sensor state
+    // 3. Fetch previous room sensor state
     const prevSensor = await prisma.roomSensor.findUnique({
-      where: { roomNumber: String(roomNumber) },
+      where: { roomId: room.id },
     });
     const wasOccupied = prevSensor?.isOccupied || false;
 
-    // Detect state changes for occupancy logging
+    // 4. Detect state changes for occupancy logging
     if (!wasOccupied && occupied) {
       // Transition from Vacant -> Occupied: start session
       await prisma.roomOccupancyLog.create({
         data: {
-          roomNumber: String(roomNumber),
+          roomId: room.id,
           occupiedAt: new Date(),
         },
       });
     } else if (wasOccupied && !occupied) {
       // Transition from Occupied -> Vacant: close session
       const openLog = await prisma.roomOccupancyLog.findFirst({
-        where: { roomNumber: String(roomNumber), vacatedAt: null },
+        where: { roomId: room.id, vacatedAt: null },
         orderBy: { occupiedAt: 'desc' },
       });
 
@@ -78,9 +106,9 @@ export async function POST(req: Request) {
       }
     }
 
-    // Upsert live room sensor state
+    // 5. Upsert live room sensor state
     const updatedSensor = await prisma.roomSensor.upsert({
-      where: { roomNumber: String(roomNumber) },
+      where: { roomId: room.id },
       update: {
         isOccupied: occupied,
         pirTriggered: pir,
@@ -90,7 +118,7 @@ export async function POST(req: Request) {
         lastUpdate: new Date(),
       },
       create: {
-        roomNumber: String(roomNumber),
+        roomId: room.id,
         isOccupied: occupied,
         pirTriggered: pir,
         radarPresence: radar,
@@ -103,7 +131,10 @@ export async function POST(req: Request) {
     // Auto-purge logs older than 7 days
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     await prisma.roomOccupancyLog.deleteMany({
-      where: { occupiedAt: { lt: sevenDaysAgo } },
+      where: {
+        roomId: room.id,
+        occupiedAt: { lt: sevenDaysAgo }
+      },
     });
 
     return NextResponse.json({
@@ -121,11 +152,40 @@ export async function POST(req: Request) {
   }
 }
 
-// GET: Fetch live room sensor data for all rooms
-export async function GET() {
+// GET: Fetch live room sensor data for a specific Lodge
+export async function GET(req: Request) {
   try {
+    const url = new URL(req.url);
+    const key = req.headers.get('x-api-key') || url.searchParams.get('apiKey');
+    
+    if (!key) {
+      return NextResponse.json({ success: false, error: 'missing API key' }, { status: 401 });
+    }
+
+    const lodge = await prisma.lodge.findFirst({
+      where: {
+        OR: [
+          { apiKey: String(key) },
+          { code: String(key) }
+        ]
+      }
+    });
+
+    if (!lodge) {
+      return NextResponse.json({ success: false, error: 'invalid API key' }, { status: 401 });
+    }
+
     const sensors = await prisma.roomSensor.findMany({
-      orderBy: { roomNumber: 'asc' },
+      where: {
+        room: {
+          lodgeId: lodge.id
+        }
+      },
+      orderBy: {
+        room: {
+          number: 'asc'
+        }
+      },
     });
     return NextResponse.json({ sensors });
   } catch (error) {

@@ -1,6 +1,8 @@
 import { checkIn } from './actions';
 import { prisma } from '@/lib/prisma';
 import type { Metadata } from 'next';
+import { auth } from '@/lib/auth';
+import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
   title: 'Guest Check-In - Smart Lodge',
@@ -10,8 +12,26 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic';
 
 export default async function CheckInPage({ searchParams }: { searchParams: Promise<{ room?: string }> }) {
+  const session = await auth();
+  if (!session || !session.user) {
+    redirect('/login');
+  }
+
+  const lodgeId = session.user.lodgeId;
+  if (lodgeId === null || lodgeId === undefined) {
+    return (
+      <div className="public-container">
+        <h1 className="page-title">Access Denied</h1>
+        <p className="public-p">Your account is not associated with any Lodge. Please contact system support.</p>
+      </div>
+    );
+  }
+
   const resolvedParams = await searchParams;
-  const rooms = await prisma.room.findMany();
+  const rooms = await prisma.room.findMany({
+    where: { lodgeId },
+    orderBy: { number: 'asc' }
+  });
   
   return (
     <>

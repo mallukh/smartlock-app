@@ -16,19 +16,29 @@ export default function NavBar() {
 
   return (
     <nav className="nav">
-      <Link href={session ? "/dashboard" : "/"} className="nav-logo" style={{ textDecoration: 'none' }}>
+      <Link 
+        href={session ? (session.user?.role === 'SUPER_ADMIN' ? "/super-admin" : "/dashboard") : "/"} 
+        className="nav-logo" 
+        style={{ textDecoration: 'none' }}
+      >
         SMART LODGE
       </Link>
       <div className="nav-links">
         {session ? (
-          <>
-            <Link href="/dashboard" className={`nav-link ${pathname === '/dashboard' ? 'active' : ''}`}>Dashboard</Link>
-            <Link href="/check-in" className={`nav-link ${pathname === '/check-in' ? 'active' : ''}`}>Check In</Link>
-            <Link href="/history" className={`nav-link ${pathname === '/history' ? 'active' : ''}`}>Lock History</Link>
-            <Link href="/bed-monitor" className={`nav-link ${pathname === '/bed-monitor' ? 'active' : ''}`}>Bed Monitor</Link>
-            <Link href="/room-occupancy" className={`nav-link ${pathname === '/room-occupancy' ? 'active' : ''}`}>Room Occupancy</Link>
-            <Link href="/settings" className={`nav-link ${pathname === '/settings' ? 'active' : ''}`}>Settings</Link>
-          </>
+          session.user?.role === 'SUPER_ADMIN' ? (
+            <>
+              <Link href="/super-admin" className={`nav-link ${pathname === '/super-admin' ? 'active' : ''}`}>Workspace</Link>
+            </>
+          ) : (
+            <>
+              <Link href="/dashboard" className={`nav-link ${pathname === '/dashboard' ? 'active' : ''}`}>Dashboard</Link>
+              <Link href="/check-in" className={`nav-link ${pathname === '/check-in' ? 'active' : ''}`}>Check In</Link>
+              <Link href="/history" className={`nav-link ${pathname === '/history' ? 'active' : ''}`}>Lock History</Link>
+              <Link href="/bed-monitor" className={`nav-link ${pathname === '/bed-monitor' ? 'active' : ''}`}>Bed Monitor</Link>
+              <Link href="/room-occupancy" className={`nav-link ${pathname === '/room-occupancy' ? 'active' : ''}`}>Room Occupancy</Link>
+              <Link href="/settings" className={`nav-link ${pathname === '/settings' ? 'active' : ''}`}>Settings</Link>
+            </>
+          )
         ) : (
           <>
             <Link href="/" className={`nav-link ${pathname === '/' ? 'active' : ''}`}>Home</Link>

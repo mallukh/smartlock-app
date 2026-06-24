@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { AutoRefresh } from '@/components/AutoRefresh';
 import { formatLocalTime, formatLocalDateTime } from '@/lib/date';
 import type { Metadata } from 'next';
+import { auth } from '@/lib/auth';
+import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
   title: 'Room Occupancy Monitor - Smart Lodge',
@@ -16,19 +18,55 @@ export default async function RoomOccupancyPage({
 }: {
   searchParams: Promise<{ room?: string }>;
 }) {
+  const session = await auth();
+  if (!session || !session.user) {
+    redirect('/login');
+  }
+
+  const lodgeId = session.user.lodgeId;
+  if (lodgeId === null || lodgeId === undefined) {
+    return (
+      <div className="public-container">
+        <h1 className="page-title">Access Denied</h1>
+        <p className="public-p">Your account is not associated with any Lodge. Please contact system support.</p>
+      </div>
+    );
+  }
+
   const params = await searchParams;
-  const rooms = await prisma.room.findMany({ orderBy: { number: 'asc' } });
+  const rooms = await prisma.room.findMany({
+    where: { lodgeId },
+    orderBy: { number: 'asc' }
+  });
+
+  const roomIds = rooms.map(r => r.id);
+  const roomMap = new Map(rooms.map(r => [r.id, r.number]));
+
   const roomSensors = await prisma.roomSensor.findMany({
-    orderBy: { roomNumber: 'asc' },
+    where: {
+      room: { lodgeId }
+    },
+    orderBy: {
+      room: { number: 'asc' }
+    },
   });
 
   // Build sensor map
-  const sensorMap = new Map(roomSensors.map((s) => [s.roomNumber, s]));
+  const sensorMap = new Map(roomSensors.map((s) => [s.roomId, s]));
   const now = new Date();
 
   // Fetch room occupancy logs
-  const logWhere: Record<string, unknown> = {};
-  if (params.room) logWhere.roomNumber = params.room;
+  const logWhere: Record<string, any> = {
+    roomId: { in: roomIds }
+  };
+  if (params.room) {
+    const selectedRoom = rooms.find(r => r.number === params.room);
+    if (selectedRoom) {
+      logWhere.roomId = selectedRoom.id;
+    } else {
+      logWhere.roomId = -1;
+    }
+  }
 
   const logs = await prisma.roomOccupancyLog.findMany({
     where: logWhere,
@@ -76,7 +114,7 @@ export default async function RoomOccupancyPage({
       <h2 className="section-heading">Live Sensor Array</h2>
       <div className="room-grid">
         {rooms.map((room) => {
-          const sensor = sensorMap.get(room.number);
+          const sensor = sensorMap.get(room.id);
           const isStale = sensor
             ? now.getTime() - new Date(sensor.lastUpdate).getTime() > 30000
             : false;
@@ -263,7 +301,7 @@ export default async function RoomOccupancyPage({
             </thead>
             <tbody>
               {logs.map((log) => {
-                const sensor = sensorMap.get(log.roomNumber);
+                const sensor = sensorMap.get(log.roomId);
                 const isSensorOffline = sensor
                   ? now.getTime() - new Date(sensor.lastUpdate).getTime() > 30000
                   : true;
@@ -284,7 +322,7 @@ export default async function RoomOccupancyPage({
                     <td
                       style={{ padding: '14px 20px', fontWeight: '600' }}
                     >
-                      Room {log.roomNumber}
+                      Room {roomMap.get(log.roomId) || 'Unknown'}
                     </td>
                     <td
                       style={{

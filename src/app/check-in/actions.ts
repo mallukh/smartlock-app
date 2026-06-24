@@ -2,8 +2,15 @@
 
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
+import { auth } from '@/lib/auth';
 
 export async function checkIn(formData: FormData) {
+  const session = await auth();
+  if (!session || !session.user || !session.user.lodgeId) {
+    throw new Error('Unauthorized');
+  }
+  const lodgeId = session.user.lodgeId;
+
   const roomNumber = formData.get('roomNumber') as string;
   const customerName = formData.get('customerName') as string;
   const durationHours = parseInt(formData.get('durationHours') as string, 10);
@@ -17,10 +24,24 @@ export async function checkIn(formData: FormData) {
   const now = new Date();
   const endTime = new Date(now.getTime() + durationHours * 60 * 60 * 1000);
 
-  // Mark any existing active bookings for this room as inactive
+  // 1. Find the Room in this Lodge
+  const room = await prisma.room.findUnique({
+    where: {
+      number_lodgeId: {
+        number: roomNumber,
+        lodgeId
+      }
+    }
+  });
+
+  if (!room) {
+    throw new Error('Room not found');
+  }
+
+  // 2. Mark any existing active bookings for this room as inactive
   await prisma.booking.updateMany({
     where: {
-      roomNumber,
+      roomId: room.id,
       isActive: true,
     },
     data: {
@@ -28,10 +49,10 @@ export async function checkIn(formData: FormData) {
     },
   });
 
-  // Create new booking
+  // 3. Create new booking
   await prisma.booking.create({
     data: {
-      roomNumber,
+      roomId: room.id,
       customerName,
       customerCardUid,
       managerCardUid,
@@ -41,5 +62,5 @@ export async function checkIn(formData: FormData) {
     },
   });
 
-  redirect('/');
+  redirect('/dashboard');
 }
